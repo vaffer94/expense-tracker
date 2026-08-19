@@ -19,6 +19,13 @@ opened with.
 
 Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailscale).
 
+### Milestone 3 — weekly backups
+
+- [ ] Weekly cron job on the Pi snapshotting the database to a folder on the SD card
+- [ ] Use SQLite's own backup API so the snapshot is consistent even during a write
+- [ ] Keep a rolling set of snapshots rather than overwriting one file
+- [ ] Optional CSV alongside it for reading in a spreadsheet — a report, not a restorable backup
+
 ### Later
 
 Deliberately out of scope, with no hooks or abstractions built for them yet:
@@ -54,8 +61,9 @@ container on the Raspberry Pi and reachable from any browser on the home network
   The app refuses to start if `APP_USER` or `APP_PASSWORD` is unset rather than running unprotected.
 - **Installable** — web app manifest and iOS/Android meta tags, so it can be added to the home
   screen and opened without browser chrome.
-- **Docker deployment** — one arch-agnostic image (verified building as `linux/arm64`), SQLite
-  bind-mounted at `./data` so data survives `docker compose down && up`.
+- **Docker deployment** — one arch-agnostic image (verified building as `linux/arm64`), running
+  as a non-root user, with SQLite in a named volume so data survives `docker compose down && up`
+  without depending on host file ownership.
 
 #### Notes
 

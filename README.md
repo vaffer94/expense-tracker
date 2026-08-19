@@ -32,8 +32,17 @@ cp .env.example .env && nano .env
 docker compose up -d --build
 ```
 
-Data lives in `./data/expenses.db`, bind-mounted into the container, so it survives
-`docker compose down && docker compose up`.
+### Where the data lives
+
+The SQLite file lives in a Docker named volume, not in the project folder, so it survives
+`docker compose down && docker compose up` and any rebuild. Copy it out or back in with:
+
+```bash
+docker compose cp app:/app/data/expenses.db ./backup.db      # snapshot
+docker compose cp ./backup.db app:/app/data/expenses.db      # restore, then: docker compose restart
+```
+
+> `docker compose down -v` deletes that volume, and your data with it. `down` on its own is safe.
 
 ### Finding the Pi's LAN IP
 
@@ -122,7 +131,7 @@ and the keyboard up on the amount field.
 backend/    FastAPI app: routers/, services/, models, schemas, Basic Auth
 frontend/   static app served by the same container; vendor/ holds Chart.js + the Lucide sprite
 tests/      pytest against an in-memory SQLite DB
-data/       SQLite file (gitignored, mounted volume)
+data/       local dev database only; under Docker the DB lives in a named volume
 ```
 
 Notes:

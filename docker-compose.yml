@@ -4,6 +4,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
+      # A named volume, not a bind mount: Docker seeds it with the image's ownership, so the
+      # non-root container can write regardless of who owns what on the host. A bind mount to a
+      # directory Docker has to create gets made root-owned on Linux, and the app cannot open the DB.
+      - data:/app/data
     env_file: .env
     restart: unless-stopped
+
+volumes:
+  data:
