@@ -87,6 +87,36 @@ class CategoryPatch(BaseModel):
     _color = field_validator("color")(CategoryCreate._color.__func__)
 
 
+class SubcategoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    category_id: int
+
+    _name = field_validator("name")(CategoryCreate._name.__func__)
+
+
+class SubcategoryPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = None
+    category_id: Optional[int] = None
+
+    _name = field_validator("name")(CategoryCreate._name.__func__)
+
+
+class SubcategoryEmbedded(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    is_archived: bool
+
+
+class SubcategoryOut(SubcategoryEmbedded):
+    category_id: int
+
+
 class CategoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -97,6 +127,7 @@ class CategoryOut(BaseModel):
     color: str
     is_archived: bool
     created_at: datetime
+    subcategories: list[SubcategoryEmbedded] = []
 
     @field_serializer("created_at")
     def _ser(self, dt: datetime) -> str:
@@ -119,6 +150,7 @@ class TransactionCreate(BaseModel):
     type: Kind
     amount: float
     category_id: int
+    subcategory_id: Optional[int] = None
     timestamp: Optional[datetime] = None
     notes: Optional[str] = Field(default=None, max_length=500)
 
@@ -133,6 +165,7 @@ class TransactionPatch(BaseModel):
 
     amount: Optional[float] = None
     category_id: Optional[int] = None
+    subcategory_id: Optional[int] = None
     timestamp: Optional[datetime] = None
     notes: Optional[str] = Field(default=None, max_length=500)
 
@@ -147,6 +180,7 @@ class TransactionOut(BaseModel):
     type: str
     amount: float
     category: CategoryEmbedded
+    subcategory: Optional[SubcategoryEmbedded] = None
     timestamp: datetime
     notes: Optional[str]
     created_at: datetime
@@ -170,6 +204,7 @@ class Summary(BaseModel):
 
 class Slice(BaseModel):
     category_id: int
+    subcategory_id: Optional[int] = None
     name: str
     color: str
     icon: str
@@ -187,8 +222,46 @@ class Bucket(BaseModel):
     period: str
     income: float
     expense: float
+    balance: float
 
 
 class Trends(BaseModel):
     granularity: str
+    opening_balance: float
     buckets: list[Bucket]
+
+
+class Settings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    starting_balance: float = 0.0
+
+    @field_validator("starting_balance")
+    @classmethod
+    def _balance(cls, v: float) -> float:
+        if abs(v) > 1_000_000:
+            raise ValueError("starting balance must be within +/- 1000000")
+        if round(v, 2) != v:
+            raise ValueError("starting balance must have at most 2 decimal places")
+        return v
+
+
+class ComparisonBucket(BaseModel):
+    period: str
+    amount: float
+    change_pct: Optional[float] = None
+
+
+class ComparisonRow(BaseModel):
+    category_id: int
+    name: str
+    color: str
+    icon: str
+    is_archived: bool
+    total: float
+    buckets: list[ComparisonBucket]
+
+
+class MonthlyComparison(BaseModel):
+    months: list[str]
+    categories: list[ComparisonRow]

@@ -25,6 +25,15 @@ def _live_conflict(db: Session, name: str, kind: str, exclude_id: int | None = N
     return db.scalars(stmt).first() is not None
 
 
+def _payload(category: Category, include_archived: bool) -> dict:
+    """The sheet renders the whole picker from this, so subcategories ride along."""
+    data = {c.name: getattr(category, c.name) for c in Category.__table__.columns}
+    data["subcategories"] = [
+        s for s in category.subcategories if include_archived or not s.is_archived
+    ]
+    return data
+
+
 @router.get("", response_model=list[CategoryOut])
 def list_categories(
     kind: Kind | None = None,
@@ -36,7 +45,7 @@ def list_categories(
         stmt = stmt.where(Category.kind == kind)
     if not include_archived:
         stmt = stmt.where(Category.is_archived.is_(False))
-    return db.scalars(stmt).all()
+    return [_payload(c, include_archived) for c in db.scalars(stmt).unique().all()]
 
 
 @router.post("", response_model=CategoryOut, status_code=201)

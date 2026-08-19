@@ -20,7 +20,7 @@
 <main id="view-home" class="view">
   <header class="topbar">
     <button class="chev" id="prev-month" aria-label="Previous month">&lsaquo;</button>
-    <h1 id="month-label">&nbsp;</h1>
+    <h1><span id="month-label">&nbsp;</span><small id="month-net"></small></h1>
     <button class="chev" id="next-month" aria-label="Next month">&rsaquo;</button>
     <a class="gear" href="#/settings" aria-label="Settings"><svg class="i"><use href="#ui-settings"></use></svg></a>
   </header>
@@ -28,10 +28,18 @@
   <section class="summary" id="summary">
     <div><span class="lbl">Income</span><b id="sum-income">—</b></div>
     <div><span class="lbl">Expenses</span><b id="sum-expense">—</b></div>
-    <div><span class="lbl">Net</span><b id="sum-net">—</b></div>
   </section>
 
   <section class="card" id="chart-card">
+    <div class="segmented small" id="pie-group">
+      <button data-group="category" class="on">Categories</button>
+      <button data-group="subcategory">Subcategories</button>
+    </div>
+    <div class="segmented small" id="pie-type">
+      <button data-type="all">All</button>
+      <button data-type="expense" class="on">Expenses</button>
+      <button data-type="income">Income</button>
+    </div>
     <div class="chart-wrap"><canvas id="pie"></canvas></div>
     <ul class="legend" id="legend"></ul>
     <div class="empty" id="chart-empty" hidden></div>
@@ -54,15 +62,30 @@
     <button data-range="1Y">1Y</button>
   </div>
   <section class="card"><div class="chart-wrap tall"><canvas id="line"></canvas></div></section>
-  <section class="list-head"><h2>Expenses by category</h2></section>
-  <ul class="bars" id="bars"></ul>
+  <section class="list-head"><h2>Month by month</h2></section>
+  <ul class="compare" id="compare"></ul>
+  <p class="hint" id="compare-note" hidden></p>
 </main>
 
 <main id="view-settings" class="view" hidden>
   <header class="topbar">
     <a class="chev" href="#/" aria-label="Back"><svg class="i"><use href="#ui-arrow-left"></use></svg></a>
-    <h1>NFC tags</h1>
+    <h1>Settings</h1>
   </header>
+  <section class="card">
+    <span class="lbl">Starting balance</span>
+    <p class="hint">Money you already had before you started tracking. It shifts the Total line in Trends and nothing else.</p>
+    <div class="amount-row compact">
+      <span class="cur">€</span>
+      <input id="starting-balance" inputmode="decimal" placeholder="0,00">
+      <button class="btn compact" id="save-balance">Save</button>
+    </div>
+  </section>
+
+  <section class="list-head"><h2>Categories</h2></section>
+  <ul class="mng-list" id="mng-list"></ul>
+
+  <section class="list-head"><h2>NFC tags</h2></section>
   <p class="hint">Write one of these URLs to an NFC tag. Tapping it opens the add screen with the category already picked.</p>
   <ul class="nfc-list" id="nfc-list"></ul>
 </main>

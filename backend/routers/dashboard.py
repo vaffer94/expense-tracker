@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..schemas import ByCategory, Kind, Summary, Trends
+from ..schemas import ByCategory, Kind, MonthlyComparison, Summary, Trends
 from ..services import dashboard as svc
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -26,8 +26,22 @@ def get_summary(rng=Depends(range_params), db: Session = Depends(get_db)):
 
 
 @router.get("/by-category", response_model=ByCategory)
-def get_by_category(type: Kind, rng=Depends(range_params), db: Session = Depends(get_db)):
-    return svc.by_category(db, rng[0], rng[1], type)
+def get_by_category(
+    type: Literal["expense", "income", "all"],
+    group: Literal["category", "subcategory"] = "category",
+    rng=Depends(range_params),
+    db: Session = Depends(get_db),
+):
+    return svc.by_category(db, rng[0], rng[1], type, group)
+
+
+@router.get("/monthly-comparison", response_model=MonthlyComparison)
+def get_monthly_comparison(
+    type: Kind = "expense",
+    rng=Depends(range_params),
+    db: Session = Depends(get_db),
+):
+    return svc.monthly_comparison(db, *rng, type)
 
 
 @router.get("/trends", response_model=Trends)

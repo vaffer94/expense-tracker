@@ -66,6 +66,14 @@ export const api = {
   archiveCategory: id => req('DELETE', `/api/categories/${id}`),
   restoreCategory: id => req('PATCH', `/api/categories/${id}/restore`, {}),
 
+  subcategories: p => req('GET', '/api/subcategories' + qs(p)),
+  createSubcategory: body => req('POST', '/api/subcategories', body),
+  updateSubcategory: (id, body) => req('PATCH', `/api/subcategories/${id}`, body),
+  archiveSubcategory: id => req('DELETE', `/api/subcategories/${id}`),
+
+  settings: () => req('GET', '/api/settings'),
+  saveSettings: body => req('PUT', '/api/settings', body),
+
   transactions: p => req('GET', '/api/transactions' + qs(p)),
   createTransaction: body => req('POST', '/api/transactions', body),
   updateTransaction: (id, body) => req('PATCH', `/api/transactions/${id}`, body),
@@ -74,6 +82,7 @@ export const api = {
   summary: p => req('GET', '/api/dashboard/summary' + qs({ ...p, tz: TZ })),
   byCategory: p => req('GET', '/api/dashboard/by-category' + qs({ ...p, tz: TZ })),
   trends: p => req('GET', '/api/dashboard/trends' + qs({ ...p, tz: TZ })),
+  comparison: p => req('GET', '/api/dashboard/monthly-comparison' + qs({ ...p, tz: TZ })),
 };
 
 /* ---- toasts: every failure surfaces, nothing fails silently ---- */

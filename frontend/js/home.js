@@ -2,7 +2,6 @@
 import {
   addMonths, api, esc, failed, fmtMoney, fmtSigned, fmtTime, icon, localDate, monthStart,
 } from './api.js';
-import { openNewCategory } from './categories.js';
 import { openSheet } from './sheet.js';
 
 const PAGE = 50;
@@ -10,6 +9,8 @@ const monthLabel = new Intl.DateTimeFormat(navigator.language, { month: 'long', 
 
 let month = monthStart(new Date());
 let filterCategory = null;
+let group = 'category';
+let moneyType = 'expense';
 let loaded = [];
 let total = 0;
 let loading = false;
@@ -22,6 +23,17 @@ export function initHome() {
   $('prev-month').onclick = () => { month = addMonths(month, -1); filterCategory = null; render(); };
   $('next-month').onclick = () => { month = addMonths(month, 1); filterCategory = null; render(); };
   $('clear-filter').onclick = () => { filterCategory = null; render(); };
+
+  for (const [id, key, set] of [['pie-group', 'group', v => group = v], ['pie-type', 'type', v => moneyType = v]]) {
+    $(id).addEventListener('click', e => {
+      const btn = e.target.closest(`[data-${key}]`);
+      if (!btn) return;
+      set(btn.dataset[key]);
+      [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === btn));
+      filterCategory = null;
+      render();
+    });
+  }
 
   $('tx-list').addEventListener('click', onListClick);
   bindSwipe($('tx-list'));
@@ -41,7 +53,7 @@ export async function render() {
   try {
     const [summary, breakdown, categories] = await Promise.all([
       api.summary(params),
-      api.byCategory({ ...params, type: 'expense' }),
+      api.byCategory({ ...params, type: moneyType, group }),
       api.categories(),
     ]);
     renderSummary(summary);
@@ -63,8 +75,9 @@ function skeleton() {
 function renderSummary({ total_income, total_expense, net }) {
   $('sum-income').textContent = fmtMoney(total_income);
   $('sum-expense').textContent = fmtMoney(total_expense);
-  const netEl = $('sum-net');
-  netEl.textContent = fmtMoney(net);
+  // The month's own net lives in the header, as a subtitle under the month name.
+  const netEl = $('month-net');
+  netEl.textContent = (net > 0 ? '+' : '') + fmtMoney(net);
   netEl.className = net < 0 ? 'neg' : 'pos';
 }
 
@@ -83,9 +96,9 @@ function renderChart({ slices }, categoryCount, txCount) {
   if (!show) {
     empty.innerHTML = categoryCount === 0
       ? `Create your first category to get started<br><button class="btn" id="first-cat">New category</button>`
-      : `No ${txCount ? 'spending' : 'activity'} recorded in ${monthLabel.format(month)}`;
+      : `No ${txCount ? 'activity of this kind' : 'activity'} recorded in ${monthLabel.format(month)}`;
     const btn = $('first-cat');
-    if (btn) btn.onclick = () => openNewCategory('expense', () => document.dispatchEvent(new Event('data-changed')));
+    if (btn) btn.onclick = () => openSheet({ type: 'expense' });
     legend.innerHTML = '';
     return;
   }
@@ -109,26 +122,30 @@ function renderChart({ slices }, categoryCount, txCount) {
       },
       onClick: (_, els) => {
         if (!els.length) return;
-        const clicked = slices[els[0].index];
-        filterCategory = filterCategory?.category_id === clicked.category_id ? null : clicked;
-        render();
+        toggleFilter(slices[els[0].index]);
       },
     },
   });
 
-  legend.innerHTML = slices.map(s => `
-    <li data-cat="${s.category_id}" class="${filterCategory && filterCategory.category_id !== s.category_id ? 'dim' : ''}">
+  legend.innerHTML = slices.map((s, i) => `
+    <li data-slice="${i}" class="${filterCategory && sliceKey(filterCategory) !== sliceKey(s) ? 'dim' : ''}">
       <span class="dot" style="background:${esc(s.color)}"></span>
       <span class="nm">${esc(s.name)}</span>
       <span>${fmtMoney(s.amount)}</span>
       <span class="pc">${s.percentage.toFixed(1)}%</span>
     </li>`).join('');
   legend.onclick = e => {
-    const id = Number(e.target.closest('[data-cat]')?.dataset.cat);
-    if (!id) return;
-    filterCategory = filterCategory?.category_id === id ? null : slices.find(s => s.category_id === id);
-    render();
+    const index = e.target.closest('[data-slice]')?.dataset.slice;
+    if (index === undefined) return;
+    toggleFilter(slices[Number(index)]);
   };
+}
+
+const sliceKey = s => `${s.category_id}:${s.subcategory_id ?? ''}`;
+
+function toggleFilter(slice) {
+  filterCategory = filterCategory && sliceKey(filterCategory) === sliceKey(slice) ? null : slice;
+  render();
 }
 
 async function loadMore() {
@@ -136,7 +153,11 @@ async function loadMore() {
   loading = true;
   try {
     const page = await api.transactions({
-      ...range(), limit: PAGE, offset: loaded.length, category_id: filterCategory?.category_id,
+      ...range(),
+      limit: PAGE,
+      offset: loaded.length,
+      category_id: filterCategory?.category_id,
+      subcategory_id: filterCategory?.subcategory_id,
     });
     total = page.total;
     loaded = loaded.concat(page.items);
@@ -154,7 +175,7 @@ async function loadMore() {
 
 function row(t) {
   const when = new Date(t.timestamp);
-  const sub = [t.notes, fmtTime(when)].filter(Boolean).join(' · ');
+  const sub = [t.subcategory?.name, t.notes, fmtTime(when)].filter(Boolean).join(' · ');
   return `
     <li class="tx" data-id="${t.id}">
       <button class="tx-del" data-act="delete" aria-label="Delete">${icon('ui-trash-2')}</button>
