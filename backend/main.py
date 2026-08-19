@@ -12,6 +12,21 @@ from .routers import categories, dashboard, settings, subcategories, transaction
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 
 
+class NoCacheStatic(StaticFiles):
+    """Serve the frontend with revalidation instead of blind caching.
+
+    Everything here ships inside the image, so a deploy changes files under paths that never
+    change. Without this the browser keeps serving the old app after an update, and a stale icon
+    sprite renders newly added icons as nothing at all - silently, with no broken-image marker.
+    "no-cache" still stores the file; it just asks the server first, and the ETag makes that a 304.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app() -> FastAPI:
     credentials()  # fail fast rather than serve unprotected
     Base.metadata.create_all(engine)
@@ -21,7 +36,7 @@ def create_app() -> FastAPI:
     for router in (categories.router, subcategories.router, transactions.router,
                    dashboard.router, settings.router):
         app.include_router(router)
-    app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="frontend")
+    app.mount("/", NoCacheStatic(directory=FRONTEND, html=True), name="frontend")
     return app
 
 
