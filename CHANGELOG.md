@@ -6,6 +6,57 @@ this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Milestone 2 — access from outside the house
+
+Infrastructure only. No application code changes are expected: Tailscale sits outside the
+container, and the app already binds `0.0.0.0` and builds NFC URLs from whatever address it was
+opened with.
+
+- [ ] Tailscale on the Pi and on the phone, same account
+- [ ] Reach the app at the Pi's tailnet hostname from mobile data
+- [ ] Optional HTTPS on the tailnet via `tailscale serve`, so Basic Auth stops travelling in cleartext
+- [ ] Exempt Tailscale from Android battery optimisation so the tunnel survives Doze
+
+Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailscale).
+
+### Later
+
+Deliberately out of scope, with no hooks or abstractions built for them yet:
+local LLM integration, budgets and alerts, CSV/JSON export, Telegram notifications,
+multi-user and multi-currency, recurring transactions.
+
+## [1.1.0] - 2026-08-19
+
+### Milestones 4 and 5 — subcategories, starting balance, Trends rework
+
+**Upgrading wipes the database** (`docker compose down -v`), and category IDs are reassigned,
+**so the NFC tags must be re-written** from Settings afterwards.
+
+### Milestone 4 — subcategories
+
+Spec: [subcategories-spec.md](subcategories-spec.md).
+
+- Categories can own subcategories, which inherit the parent's kind, icon and colour
+- Transactions record both category and subcategory, so re-parenting never rewrites past charts
+- The Home pie toggles Categories / Subcategories, with slices shaded per parent, and
+  All / Expenses / Income
+- The full-height category picker is gone: the transaction sheet has an inline category grid and
+  subcategory chips, and category management moved to Settings
+
+### Milestone 5 — starting balance and Trends rework
+
+Spec: [balance-and-trends-spec.md](balance-and-trends-spec.md).
+
+- A starting balance in Settings — the money you had before you started tracking
+- Trends gains a running Total line on its own axis, starting from the balance at the beginning of
+  the window rather than from zero
+- The flat category list under the chart becomes a month-by-month comparison, one row per category
+  with a bar per month and the change from the month before, for expenses and for income
+- Transaction rows show the date beside the amount, and the subcategory in the subtitle
+- The bottom-right nav button names its destination: Trends from the dashboard, Dashboard from
+  Trends, each with its own icon
+- The month's net moves into the Home header; the summary strip drops to two tiles
+
 ### Added
 
 - **Weekly backups** — `scripts/backup.sh` snapshots the database to the SD card via cron, keeping
@@ -22,55 +73,12 @@ this project uses [Semantic Versioning](https://semver.org/).
 
 - Pressing Enter in the transaction sheet saves, the same as tapping Save. The sheet is a real
   `<form>`, so this also means Enter does nothing while the entry is incomplete.
+- The expense button carries a minus and income keeps the plus: two plus icons for opposite
+  directions read as the same action.
+- The frontend is served with `Cache-Control: no-cache`, so an update takes effect on reload rather
+  than needing a hard refresh on every device. The ETag keeps that a 304 — measured at 4.8 ms for
+  all twelve files, less than the app's own four API calls.
 
-### Milestone 2 — access from outside the house
-
-Infrastructure only. No application code changes are expected: Tailscale sits outside the
-container, and the app already binds `0.0.0.0` and builds NFC URLs from whatever address it was
-opened with.
-
-- [ ] Tailscale on the Pi and on the phone, same account
-- [ ] Reach the app at the Pi's tailnet hostname from mobile data
-- [ ] Optional HTTPS on the tailnet via `tailscale serve`, so Basic Auth stops travelling in cleartext
-- [ ] Exempt Tailscale from Android battery optimisation so the tunnel survives Doze
-
-Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailscale).
-
-### Milestone 4 — subcategories
-
-Implemented on `feature/subcategories-and-balance`, awaiting testing.
-Spec: [subcategories-spec.md](subcategories-spec.md).
-
-- Categories can own subcategories, which inherit the parent's kind, icon and colour
-- Transactions record both category and subcategory, so re-parenting never rewrites past charts
-- The Home pie toggles Categories / Subcategories, with slices shaded per parent, and
-  All / Expenses / Income
-- The full-height category picker is gone: the transaction sheet has an inline category grid and
-  subcategory chips, and category management moved to Settings
-
-### Milestone 5 — starting balance and Trends rework
-
-Implemented on `feature/subcategories-and-balance`, awaiting testing.
-Spec: [balance-and-trends-spec.md](balance-and-trends-spec.md).
-
-- A starting balance in Settings — the money you had before you started tracking
-- Trends gains a running Total line on its own axis, starting from the balance at the beginning of
-  the window rather than from zero
-- The flat category list under the chart becomes a month-by-month comparison, one row per category
-  with a bar per month and the change from the month before, for expenses and for income
-- Transaction rows show the date beside the amount, and the subcategory in the subtitle
-- The bottom-right nav button names its destination: Trends from the dashboard, Dashboard from
-  Trends, each with its own icon
-- The month's net moves into the Home header; the summary strip drops to two tiles
-
-**Requires wiping the database** (`docker compose down -v`), which is why it ships while all data
-is still test data.
-
-### Later
-
-Deliberately out of scope, with no hooks or abstractions built for them yet:
-local LLM integration, budgets and alerts, CSV/JSON export, Telegram notifications,
-multi-user and multi-currency, recurring transactions.
 
 ## [1.0.0] - 2026-08-19
 
