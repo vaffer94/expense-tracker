@@ -37,6 +37,11 @@ Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailsca
 - [ ] Keep a rolling set of snapshots rather than overwriting one file
 - [ ] Optional CSV alongside it for reading in a spreadsheet — a report, not a restorable backup
 
+### Milestone 4 — subcategories
+
+Spec written and awaiting review: [subcategories-spec.md](subcategories-spec.md).
+Requires wiping the database, which is acceptable while all data is still test data.
+
 ### Later
 
 - [ ] **Starting balance** — there is currently no way to record the money you already had, so
