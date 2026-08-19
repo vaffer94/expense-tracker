@@ -1,50 +1,9 @@
 // Add / edit transaction bottom sheet. Category and subcategory are chosen inline: there is no
 // separate picker screen.
-import { api, esc, failed, icon, localInput, toast, withOffset } from './api.js';
+import { api, esc, failed, icon, localInput, mountSheet, toast, withOffset } from './api.js';
 import { avatar, editorFields, handleEditorClick, readEditor } from './categories.js';
 
 const GRID_SLOTS = 9;   // three rows; beyond that the grid collapses behind a "…" tile
-
-/** Slide a sheet up over a dimmed backdrop. Returns { el, close, tryClose }. */
-export function mountSheet(html, { tall = false, onClose } = {}) {
-  const root = document.getElementById('sheet-root');
-  const backdrop = document.createElement('div');
-  backdrop.className = 'backdrop';
-  const sheet = document.createElement('div');
-  sheet.className = 'sheet' + (tall ? ' tall' : '');
-  sheet.innerHTML = `<div class="grip"></div>` + html;
-  root.append(backdrop, sheet);
-  requestAnimationFrame(() => { backdrop.classList.add('in'); sheet.classList.add('in'); });
-
-  let closed = false;
-  const close = () => {
-    if (closed) return;
-    closed = true;
-    backdrop.classList.remove('in');
-    sheet.classList.remove('in');
-    setTimeout(() => { backdrop.remove(); sheet.remove(); }, 260);
-    onClose?.();
-  };
-  const tryClose = () => { if (sheet.dataset.guard !== 'on' || confirm('Discard this entry?')) close(); };
-  backdrop.addEventListener('click', tryClose);
-
-  let startY = null;
-  sheet.addEventListener('touchstart', e => { startY = sheet.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
-  sheet.addEventListener('touchmove', e => {
-    if (startY === null) return;
-    const dy = e.touches[0].clientY - startY;
-    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
-  }, { passive: true });
-  sheet.addEventListener('touchend', e => {
-    if (startY === null) return;
-    const dy = e.changedTouches[0].clientY - startY;
-    sheet.style.transform = '';
-    startY = null;
-    if (dy > 90) tryClose();
-  });
-
-  return { el: sheet, close, tryClose };
-}
 
 const parseAmount = raw => {
   const n = Number(String(raw).replace(',', '.').trim());

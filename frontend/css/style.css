@@ -265,8 +265,8 @@ input.row::-webkit-calendar-picker-indicator { filter: invert(.6); }
 .mng-subs .grow { flex: 1; }
 .mng-subs .icon-btn { width: 28px; height: 28px; background: none; }
 .link { color: var(--blue); font-size: 13px; padding: 4px 0; }
-.mng-form { margin-top: 12px; }
-.mng-form select.row { appearance: none; }
+.danger-text { color: var(--red); margin-top: 14px; }
+select.row { appearance: none; }
 .amount-row.compact { margin: 10px 0 0; justify-content: flex-start; gap: 10px; }
 .amount-row.compact .cur { font-size: 20px; }
 .amount-row.compact input { font-size: 24px; max-width: 140px; }

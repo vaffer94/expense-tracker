@@ -1,7 +1,7 @@
 // Category editing widgets, shared by the transaction sheet's inline "new category" form and by
 // the management screen in Settings. The old full-height picker sheet is gone: category selection
 // now lives inline in the transaction sheet.
-import { ICON_NAMES, api, esc, failed, icon, toast } from './api.js';
+import { ICON_NAMES, api, esc, failed, icon, mountSheet, toast } from './api.js';
 
 export const PALETTE = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e',
                         '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#78716c'];
@@ -63,127 +63,116 @@ export async function renderManager(host) {
             </li>`).join('')}
           <li><button class="link" data-act="new-sub">+ Add subcategory</button></li>
         </ul>
-        <div class="mng-form" hidden></div>
       </li>`).join('') + `<li><button class="btn wide ghost" data-act="new-cat">+ Add category</button></li>`;
   }
 
-  function formHost(target) {
-    const form = target.closest('.mng')?.querySelector('.mng-form') ?? host.querySelector('.mng-form');
-    return form;
+  /** Wraps a save: run it, refresh the list, tell the rest of the app, close the sheet. */
+  const commit = async (fn, close) => {
+    try {
+      await fn();
+      await refresh();
+      document.dispatchEvent(new Event('data-changed'));
+      close();
+    } catch (err) { failed(err); }
+  };
+
+  function openCategorySheet(category) {
+    const editing = Boolean(category);
+    const { el, close } = mountSheet(`
+      <div class="sheet-head">
+        <button type="button" class="icon-btn" data-act="close" aria-label="Cancel">${icon('ui-x')}</button>
+        <h2>${editing ? 'Edit' : 'New'} category</h2>
+        <button type="button" class="btn compact" data-act="save">${editing ? 'Save' : 'Create'}</button>
+      </div>
+      ${editing ? '' : `
+        <div class="field"><span class="lbl">Kind</span>
+          <div class="segmented small" data-f="kind">
+            <button type="button" data-kind="expense" class="on">Expense</button>
+            <button type="button" data-kind="income">Income</button>
+          </div>
+        </div>`}
+      ${editorFields(editing ? { name: category.name, iconName: category.icon, color: category.color } : {})}
+      ${editing ? `<button type="button" class="btn wide ghost danger-text" data-act="archive">Archive category</button>` : ''}
+    `);
+
+    el.addEventListener('click', async e => {
+      if (handleEditorClick(e)) return;
+      const kindBtn = e.target.closest('[data-f="kind"] button');
+      if (kindBtn) {
+        kindBtn.parentElement.querySelector('.on')?.classList.remove('on');
+        return kindBtn.classList.add('on');
+      }
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'close') return close();
+
+      if (act === 'save') {
+        const body = readEditor(el);
+        if (!body.name) return toast('Give the category a name', true);
+        if (editing) return commit(() => api.updateCategory(category.id, body), close);
+        body.kind = el.querySelector('[data-f="kind"] .on').dataset.kind;
+        return commit(() => api.createCategory(body), close);
+      }
+
+      if (act === 'archive') {
+        if (!confirm(`Archive "${category.name}"?\n\nIt disappears from the picker, but past transactions and chart slices are kept.`)) return;
+        return commit(() => api.archiveCategory(category.id), close);
+      }
+    });
   }
 
-  host.addEventListener('click', async e => {
-    if (handleEditorClick(e)) return;
+  function openSubcategorySheet(category, sub) {
+    const editing = Boolean(sub);
+    const parents = categories.filter(c => c.kind === category.kind);
+    const { el, close } = mountSheet(`
+      <div class="sheet-head">
+        <button type="button" class="icon-btn" data-act="close" aria-label="Cancel">${icon('ui-x')}</button>
+        <h2>${editing ? 'Edit' : 'New'} subcategory</h2>
+        <button type="button" class="btn compact" data-act="save">${editing ? 'Save' : 'Create'}</button>
+      </div>
+      <div class="field"><span class="lbl">Name</span>
+        <input class="row" data-f="sub-name" placeholder="Subcategory name" maxlength="40" value="${esc(sub?.name ?? '')}">
+      </div>
+      ${editing ? `
+        <div class="field"><span class="lbl">Belongs to</span>
+          <select class="row" data-f="sub-parent">
+            ${parents.map(p => `<option value="${p.id}" ${p.id === category.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+          </select>
+        </div>
+        <p class="hint">Moving it changes where new transactions land. Past ones keep the category
+        they were logged under.</p>
+        <button type="button" class="btn wide ghost danger-text" data-act="archive">Archive subcategory</button>
+      ` : ''}
+    `);
+
+    el.addEventListener('click', async e => {
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'close') return close();
+
+      if (act === 'save') {
+        const name = el.querySelector('[data-f="sub-name"]').value.trim();
+        if (!name) return toast('Give the subcategory a name', true);
+        if (!editing) return commit(() => api.createSubcategory({ name, category_id: category.id }), close);
+        const parent = Number(el.querySelector('[data-f="sub-parent"]').value);
+        return commit(() => api.updateSubcategory(sub.id, { name, category_id: parent }), close);
+      }
+
+      if (act === 'archive') {
+        if (!confirm(`Archive "${sub.name}"?\n\nPast transactions keep it.`)) return;
+        return commit(() => api.archiveSubcategory(sub.id), close);
+      }
+    });
+  }
+
+  host.addEventListener('click', e => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (!act) return;
-
-    const li = e.target.closest('.mng');
-    const categoryId = Number(li?.dataset.cat);
-    const category = categories.find(c => c.id === categoryId);
+    const category = categories.find(c => c.id === Number(e.target.closest('.mng')?.dataset.cat));
     const subId = Number(e.target.closest('[data-sub]')?.dataset.sub);
-    const form = act === 'new-cat' ? host.querySelector('.mng-form') : formHost(e.target);
 
-    const show = html => {
-      host.querySelectorAll('.mng-form').forEach(f => { f.hidden = true; f.innerHTML = ''; });
-      if (!form) return;
-      form.hidden = false;
-      form.innerHTML = html;
-      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-
-    if (act === 'edit-cat') {
-      show(editorFields(category ? { name: category.name, iconName: category.icon, color: category.color } : {}) + `
-        <div class="form-actions">
-          <button class="btn ghost" data-act="archive-cat">Archive</button>
-          <button class="btn ghost" data-act="cancel">Cancel</button>
-          <button class="btn" data-act="save-cat">Save</button>
-        </div>`);
-    }
-
-    if (act === 'new-cat') {
-      const kind = prompt('Category kind: type "expense" or "income"', 'expense');
-      if (kind !== 'expense' && kind !== 'income') return;
-      host.querySelector('.mng-form')?.removeAttribute('hidden');
-      const target = host.querySelector('.mng-form');
-      if (!target) return;
-      target.dataset.kind = kind;
-      target.innerHTML = editorFields() + `
-        <div class="form-actions">
-          <button class="btn ghost" data-act="cancel">Cancel</button>
-          <button class="btn" data-act="create-cat">Create ${kind}</button>
-        </div>`;
-    }
-
-    if (act === 'new-sub' || act === 'edit-sub') {
-      const existing = act === 'edit-sub' ? category.subcategories.find(s => s.id === subId) : null;
-      const parents = categories.filter(c => c.kind === category.kind);
-      show(`
-        <input class="row" data-f="sub-name" placeholder="Subcategory name" maxlength="40"
-               value="${esc(existing?.name ?? '')}">
-        ${existing ? `
-          <label class="field" style="margin-top:10px"><span class="lbl">Belongs to</span>
-            <select class="row" data-f="sub-parent">
-              ${parents.map(p => `<option value="${p.id}" ${p.id === category.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
-            </select>
-          </label>` : ''}
-        <div class="form-actions">
-          ${existing ? `<button class="btn ghost" data-act="archive-sub" data-id="${existing.id}">Archive</button>` : ''}
-          <button class="btn ghost" data-act="cancel">Cancel</button>
-          <button class="btn" data-act="${existing ? 'save-sub' : 'create-sub'}" data-id="${existing?.id ?? ''}">
-            ${existing ? 'Save' : 'Create'}
-          </button>
-        </div>`);
-    }
-
-    if (act === 'cancel') {
-      host.querySelectorAll('.mng-form').forEach(f => { f.hidden = true; f.innerHTML = ''; });
-    }
-
-    const done = async fn => {
-      try {
-        await fn();
-        await refresh();
-        document.dispatchEvent(new Event('data-changed'));
-      } catch (err) { failed(err); }
-    };
-
-    if (act === 'save-cat') {
-      const body = readEditor(form);
-      if (!body.name) return toast('Give the category a name', true);
-      await done(() => api.updateCategory(categoryId, body));
-    }
-
-    if (act === 'create-cat') {
-      const target = host.querySelector('.mng-form');
-      const body = { ...readEditor(target), kind: target.dataset.kind };
-      if (!body.name) return toast('Give the category a name', true);
-      await done(() => api.createCategory(body));
-    }
-
-    if (act === 'archive-cat') {
-      if (!confirm(`Archive "${category.name}"?\n\nIt disappears from the picker, but past transactions and chart slices are kept.`)) return;
-      await done(() => api.archiveCategory(categoryId));
-    }
-
-    if (act === 'create-sub') {
-      const name = form.querySelector('[data-f="sub-name"]').value.trim();
-      if (!name) return toast('Give the subcategory a name', true);
-      await done(() => api.createSubcategory({ name, category_id: categoryId }));
-    }
-
-    if (act === 'save-sub') {
-      const id = Number(e.target.closest('[data-act]').dataset.id);
-      const name = form.querySelector('[data-f="sub-name"]').value.trim();
-      const parent = Number(form.querySelector('[data-f="sub-parent"]').value);
-      if (!name) return toast('Give the subcategory a name', true);
-      await done(() => api.updateSubcategory(id, { name, category_id: parent }));
-    }
-
-    if (act === 'archive-sub') {
-      const id = Number(e.target.closest('[data-act]').dataset.id);
-      if (!confirm('Archive this subcategory?\n\nPast transactions keep it.')) return;
-      await done(() => api.archiveSubcategory(id));
-    }
+    if (act === 'new-cat') openCategorySheet(null);
+    if (act === 'edit-cat') openCategorySheet(category);
+    if (act === 'new-sub') openSubcategorySheet(category, null);
+    if (act === 'edit-sub') openSubcategorySheet(category, category.subcategories.find(s => s.id === subId));
   });
 
   await refresh();
