@@ -58,6 +58,108 @@ The app is then at `http://<pi-ip>:8000`.
 > Basic Auth over plain HTTP is only safe on a trusted LAN. Do not port-forward 8000 to the
 > internet without a reverse proxy terminating TLS in front of it.
 
+## Shipping an update to the Pi
+
+The loop is: change it on the Mac, prove it works, push, pull on the Pi, rebuild. Nothing is ever
+edited directly on the Pi — that way the repo is always the truth about what is running.
+
+### 1. On the Mac
+
+```bash
+.venv/bin/python -m pytest          # must be green before anything else
+git add -A
+git commit -m "what changed and why"
+git push origin main
+```
+
+If you want to see it in a browser before pushing:
+
+```bash
+APP_USER=dev APP_PASSWORD=dev DB_PATH=./data/expenses.db \
+  .venv/bin/uvicorn backend.main:app --reload --port 8000
+```
+
+That uses a throwaway local database, so experiments cannot touch what is on the Pi.
+
+### 2. On the Pi
+
+```bash
+cd ~/expense-tracker
+git pull
+docker compose up -d --build
+docker compose logs --tail 20
+```
+
+**Rebuild whenever any file inside `backend/` or `frontend/` changed.** Both are copied into the
+image at build time, so without `--build` the container keeps serving the old code — including CSS
+and JavaScript, which is the confusing version of this mistake: the page looks stale and nothing
+in the logs looks wrong.
+
+`--build` is unnecessary only when the change was limited to `docker-compose.yml` or `.env`; plain
+`docker compose up -d` is enough there.
+
+The database is untouched by any of this. It lives in a named volume, not in the image, so
+rebuilding never puts it at risk.
+
+### 3. Verify
+
+```bash
+docker compose ps                   # Up, not Restarting
+```
+
+Then open the app on your phone and check the thing you actually changed. If the page still looks
+old, pull down to refresh — the browser may be holding a cached copy of the JS or CSS.
+
+### 4. Reclaim space now and then
+
+Every rebuild leaves the previous image behind, and an SD card fills up faster than you would
+think:
+
+```bash
+docker image prune -f
+df -h /                             # keep an eye on the root filesystem
+```
+
+### Rolling back
+
+Every commit that ran on the Pi is a working state you can return to:
+
+```bash
+git log --oneline                   # find the last good commit
+git checkout <commit-or-tag>
+docker compose up -d --build
+```
+
+Your data survives a rollback untouched, because it is in the volume rather than the image. To get
+back to the latest code afterwards: `git checkout main`.
+
+### Careful with database changes
+
+There are no migrations in this project — tables are created once, on first startup. Adding a
+column to `backend/models.py` therefore does **not** alter the table that already exists on the Pi,
+and the app will error on the missing column with no obvious explanation.
+
+If a release ever changes the schema, back the database up first:
+
+```bash
+docker compose cp app:/app/data/expenses.db ./before-upgrade.db
+```
+
+and expect to migrate the data by hand, or to start from a fresh database and re-enter it.
+
+### Marking a release
+
+Once a change is confirmed working on the Pi, record it. Add a version section at the top of
+[CHANGELOG.md](CHANGELOG.md) describing what changed, then, from the Mac:
+
+```bash
+git tag -a v1.1.0 -m "short description"
+git push origin v1.1.0
+```
+
+Tag only what you have actually seen running on the Pi — a tag is a claim that this exact commit
+worked in the real deployment. Bump the middle number for new features, the last one for fixes.
+
 ## Reaching it from outside the house (Tailscale)
 
 The Pi's LAN address only exists inside your home network, so away from home there is nothing to
