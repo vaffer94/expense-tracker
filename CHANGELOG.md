@@ -65,5 +65,5 @@ container on the Raspberry Pi and reachable from any browser on the home network
 - 23 tests cover the parts that are easy to get wrong — amount and timezone validation, the
   type/kind invariant, archived-category behaviour, dense bucketing, and the 401.
 
-[Unreleased]: https://github.com/vaniaferrari/expense-tracker/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/vaniaferrari/expense-tracker/releases/tag/v1.0.0
+[Unreleased]: https://github.com/vaffer94/expense-tracker/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/vaffer94/expense-tracker/releases/tag/v1.0.0
