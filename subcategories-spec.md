@@ -188,6 +188,16 @@ A small segmented control on the chart card: **Categories | Subcategories**. It 
 `group` parameter and re-renders chart and legend. The choice persists for the session; it does not
 need to survive a reload.
 
+A second control switches which money is shown: **All | Expenses | Income**, defaulting to
+Expenses, which is today's behaviour. `All` puts income and expense categories in the same pie, so
+its percentages are shares of *total money moved in the month*, not of spending — the legend must
+say so, or the figures will be read wrongly. This requires `type=all` as a third value on
+`GET /api/dashboard/by-category`.
+
+> **Design concern.** Two segmented controls stacked above a pie on a 390px screen is a lot of
+> chrome for one chart. If it feels heavy once built, the money filter should become a compact chip
+> row, or move into the legend, rather than a second full-width control.
+
 Tapping a slice filters the transaction list as it does today — by category in category view, by
 subcategory in subcategory view.
 
