@@ -6,6 +6,12 @@ this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Weekly backups** — `scripts/backup.sh` snapshots the database to the SD card via cron, keeping
+  a rolling set of 8. It copies the SQLite file rather than exporting rows, so it is independent of
+  the schema and survives any future change to it. Setup and restore steps are in the README.
+
 ### Fixed
 
 - The transaction sheet's Save button sat at the bottom, where the on-screen keyboard covers it —
@@ -29,13 +35,6 @@ opened with.
 - [ ] Exempt Tailscale from Android battery optimisation so the tunnel survives Doze
 
 Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailscale).
-
-### Milestone 3 — weekly backups
-
-- [ ] Weekly cron job on the Pi snapshotting the database to a folder on the SD card
-- [ ] Use SQLite's own backup API so the snapshot is consistent even during a write
-- [ ] Keep a rolling set of snapshots rather than overwriting one file
-- [ ] Optional CSV alongside it for reading in a spreadsheet — a report, not a restorable backup
 
 ### Milestone 4 — subcategories
 

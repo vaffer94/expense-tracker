@@ -44,6 +44,48 @@ docker compose cp ./backup.db app:/app/data/expenses.db      # restore, then: do
 
 > `docker compose down -v` deletes that volume, and your data with it. `down` on its own is safe.
 
+### Weekly backups
+
+[`scripts/backup.sh`](scripts/backup.sh) writes a snapshot of the database into `backups/` on the
+SD card, keeps the newest 8, and deletes older ones. It copies the whole SQLite file rather than
+exporting rows, so it knows nothing about the schema and keeps working unchanged as the app grows.
+
+Run it by hand any time:
+
+```bash
+cd ~/expense-tracker && ./scripts/backup.sh
+```
+
+Schedule it for 03:00 every Sunday with `crontab -e`:
+
+```
+0 3 * * 0 cd /home/vaffer94/expense-tracker && ./scripts/backup.sh >> /home/vaffer94/backup.log 2>&1
+```
+
+Check it ran with `tail ~/backup.log`. Override the defaults with `BACKUP_DIR` and `BACKUP_KEEP`
+if you want them elsewhere or want to keep more.
+
+The snapshot uses SQLite's own backup API, not a file copy, so it is consistent even if it happens
+to run while you are saving an expense.
+
+#### Restoring
+
+```bash
+docker compose stop
+docker compose cp backups/expenses-2026-08-19.db app:/app/data/expenses.db
+docker compose start
+```
+
+#### What this does not protect against
+
+These snapshots live on the same SD card as the database. They cover the failures you are likely to
+cause — a bad migration, a wrong `down -v`, deleting the wrong thing — but **not** the card itself
+dying, which is the most common way a Raspberry Pi loses data. Copy them off the Pi now and then:
+
+```bash
+scp 'vaffer94@<pi-ip>:~/expense-tracker/backups/*.db' ~/expense-backups/    # from the Mac
+```
+
 ### Finding the Pi's LAN IP
 
 You need it for the NFC tag URLs and to reach the app from your phone:
