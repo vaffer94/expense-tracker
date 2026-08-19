@@ -6,6 +6,17 @@ this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The transaction sheet's Save button sat at the bottom, where the on-screen keyboard covers it —
+  worst of all in the NFC flow, which opens with the amount field already focused. Save now lives
+  in the sheet header, where no keyboard can reach it.
+
+### Changed
+
+- Pressing Enter in the transaction sheet saves, the same as tapping Save. The sheet is a real
+  `<form>`, so this also means Enter does nothing while the entry is incomplete.
+
 ### Milestone 2 — access from outside the house
 
 Infrastructure only. No application code changes are expected: Tailscale sits outside the
@@ -27,6 +38,10 @@ Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailsca
 - [ ] Optional CSV alongside it for reading in a spreadsheet — a report, not a restorable backup
 
 ### Later
+
+- [ ] **Starting balance** — there is currently no way to record the money you already had, so
+  the net figure only reflects what has been logged since day one. Possibly just a documented
+  "Opening balance" income transaction rather than a new concept in the data model.
 
 Deliberately out of scope, with no hooks or abstractions built for them yet:
 local LLM integration, budgets and alerts, CSV/JSON export, Telegram notifications,

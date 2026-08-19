@@ -61,25 +61,31 @@ export function openSheet({ type = 'expense', transaction = null, category = nul
     categoryId: picked?.id ?? null,
   };
 
+  // Save lives in the header, not at the bottom: the on-screen keyboard covers the bottom of the
+  // sheet, and this form is opened with the amount field already focused.
+  // A real <form> makes Enter submit for free, and an implicit submit is blocked while the
+  // submit button is disabled - exactly the rule the button already enforces.
   const { el, close, tryClose } = mountSheet(`
-    <div class="sheet-head">
-      <button class="icon-btn" data-act="cancel" aria-label="Cancel">${icon('ui-x')}</button>
-      <h2>${editing ? 'Edit' : 'New'} ${kind}</h2>
-    </div>
-    <div class="amount-row">
-      <span class="cur">€</span>
-      <input id="amount" inputmode="decimal" placeholder="0,00" value="${esc(initial.amount)}">
-    </div>
-    <label class="field"><span class="lbl">Category</span>
-      <button class="row" data-act="pick"></button>
-    </label>
-    <label class="field"><span class="lbl">Date &amp; time</span>
-      <input class="row" type="datetime-local" data-f="when" value="${initial.when}">
-    </label>
-    <label class="field"><span class="lbl">Notes</span>
-      <input class="row" data-f="notes" placeholder="Optional" maxlength="500" value="${esc(initial.notes)}">
-    </label>
-    <button class="btn wide" data-act="save">Save ${kind}</button>
+    <form novalidate>
+      <div class="sheet-head">
+        <button type="button" class="icon-btn" data-act="cancel" aria-label="Cancel">${icon('ui-x')}</button>
+        <h2>${editing ? 'Edit' : 'New'} ${kind}</h2>
+        <button type="submit" class="btn compact" data-act="save">Save</button>
+      </div>
+      <div class="amount-row">
+        <span class="cur">€</span>
+        <input id="amount" inputmode="decimal" enterkeyhint="done" placeholder="0,00" value="${esc(initial.amount)}">
+      </div>
+      <label class="field"><span class="lbl">Category</span>
+        <button type="button" class="row" data-act="pick"></button>
+      </label>
+      <label class="field"><span class="lbl">Date &amp; time</span>
+        <input class="row" type="datetime-local" data-f="when" value="${initial.when}">
+      </label>
+      <label class="field"><span class="lbl">Notes</span>
+        <input class="row" data-f="notes" enterkeyhint="done" placeholder="Optional" maxlength="500" value="${esc(initial.notes)}">
+      </label>
+    </form>
   `);
 
   const $ = sel => el.querySelector(sel);
@@ -103,12 +109,13 @@ export function openSheet({ type = 'expense', transaction = null, category = nul
   }
 
   el.addEventListener('input', sync);
-  el.addEventListener('click', async e => {
+  el.addEventListener('click', e => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'cancel') tryClose();
     if (act === 'pick') openPicker(kind, cat => { picked = cat; renderCategory(); sync(); });
-    if (act === 'save') await save();
   });
+  // Covers both the Save button and Enter from any field.
+  $('form').addEventListener('submit', e => { e.preventDefault(); save(); });
 
   async function save() {
     saveEl.disabled = true;
