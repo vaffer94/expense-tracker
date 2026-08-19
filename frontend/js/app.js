@@ -1,5 +1,5 @@
 // Boot, hash routing, and the NFC deep-link handoff.
-import { api, failed, loadSprite, toast } from './api.js';
+import { api, failed, icon, loadSprite, toast } from './api.js';
 import * as home from './home.js';
 import * as settings from './settings.js';
 import * as trends from './trends.js';
@@ -16,7 +16,13 @@ function route() {
   for (const [key, view] of Object.entries(VIEWS)) {
     document.getElementById(view.el).hidden = key !== hash;
   }
-  document.getElementById('btn-trends').classList.toggle('on', hash === '#/trends');
+  // The nav button names where it takes you, not where you are.
+  const nav = document.getElementById('btn-trends');
+  const onTrends = hash === '#/trends';
+  nav.innerHTML = onTrends
+    ? `${icon('ui-pie-chart')}<span>Dashboard</span>`
+    : `${icon('trending-up')}<span>Trends</span>`;
+  nav.classList.toggle('on', onTrends);
   VIEWS[hash].render();
 }
 

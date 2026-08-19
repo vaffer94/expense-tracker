@@ -36,12 +36,21 @@ export async function render() {
   const params = { from: localDate(from), to: localDate(to) };
 
   try {
-    const [trends, comparison] = await Promise.all([
+    const [trends, expenses, income] = await Promise.all([
       api.trends({ ...params, granularity }),
       api.comparison({ ...params, type: 'expense' }),
+      api.comparison({ ...params, type: 'income' }),
     ]);
     renderLine(trends);
-    renderComparison(comparison);
+
+    const note = $('compare-note');
+    note.hidden = expenses.months.length > 1;
+    note.textContent = 'Only one month in this range — pick 3M or 1Y to compare months.';
+
+    renderComparison($('compare'), expenses, 'No expenses in this range');
+    // Income usually has one or two categories, so it gets its own section rather than a toggle.
+    $('compare-income-head').hidden = income.categories.length === 0;
+    renderComparison($('compare-income'), income, '');
   } catch (err) {
     failed(err);
   }
@@ -113,12 +122,8 @@ function changeLabel(change) {
 
 /** One row per category, each a small bar chart of months. Plain CSS: a dozen canvases on a phone
  *  would cost more than they show. */
-function renderComparison({ months, categories }) {
-  const note = $('compare-note');
-  note.hidden = months.length > 1;
-  note.textContent = 'Only one month in this range — pick 3M or 1Y to compare months.';
-
-  $('compare').innerHTML = categories.length
+function renderComparison(host, { months, categories }, emptyText) {
+  host.innerHTML = categories.length
     ? categories.map(c => {
         const max = Math.max(...c.buckets.map(b => b.amount), 0) || 1;
         return `
@@ -139,5 +144,5 @@ function renderComparison({ months, categories }) {
           </div>
         </li>`;
       }).join('')
-    : `<li class="empty">No expenses in this range</li>`;
+    : (emptyText ? `<li class="empty">${emptyText}</li>` : '');
 }

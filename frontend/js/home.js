@@ -1,6 +1,6 @@
 // Home view: month summary, expense pie, transaction list.
 import {
-  addMonths, api, esc, failed, fmtMoney, fmtSigned, fmtTime, icon, localDate, monthStart,
+  addMonths, api, esc, failed, fmtDayTime, fmtMoney, fmtSigned, icon, localDate, monthStart,
 } from './api.js';
 import { openSheet } from './sheet.js';
 
@@ -175,7 +175,7 @@ async function loadMore() {
 
 function row(t) {
   const when = new Date(t.timestamp);
-  const sub = [t.subcategory?.name, t.notes, fmtTime(when)].filter(Boolean).join(' · ');
+  const sub = [t.subcategory?.name, t.notes].filter(Boolean).join(' · ');
   return `
     <li class="tx" data-id="${t.id}">
       <button class="tx-del" data-act="delete" aria-label="Delete">${icon('ui-trash-2')}</button>
@@ -185,7 +185,10 @@ function row(t) {
           <span class="nm">${esc(t.category.name)}</span>
           <span class="sub">${esc(sub)}</span>
         </span>
-        <span class="tx-amt ${t.type === 'expense' ? 'neg' : 'pos'}">${fmtSigned(t.type, t.amount)}</span>
+        <span class="tx-right">
+          <span class="tx-amt ${t.type === 'expense' ? 'neg' : 'pos'}">${fmtSigned(t.type, t.amount)}</span>
+          <span class="tx-when">${esc(fmtDayTime(when))}</span>
+        </span>
       </div>
     </li>`;
 }

@@ -57,7 +57,10 @@ Spec: [balance-and-trends-spec.md](balance-and-trends-spec.md).
 - Trends gains a running Total line on its own axis, starting from the balance at the beginning of
   the window rather than from zero
 - The flat category list under the chart becomes a month-by-month comparison, one row per category
-  with a bar per month and the change from the month before
+  with a bar per month and the change from the month before, for expenses and for income
+- Transaction rows show the date beside the amount, and the subcategory in the subtitle
+- The bottom-right nav button names its destination: Trends from the dashboard, Dashboard from
+  Trends, each with its own icon
 - The month's net moves into the Home header; the summary strip drops to two tiles
 
 **Requires wiping the database** (`docker compose down -v`), which is why it ships while all data
