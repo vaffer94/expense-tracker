@@ -11,7 +11,8 @@
 <meta name="apple-mobile-web-app-title" content="Expenses">
 <link rel="icon" href="vendor/app-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="vendor/app-icon.svg">
-<link rel="manifest" href="manifest.json">
+<!-- use-credentials: manifests are fetched anonymously by default, which Basic Auth rejects -->
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials">
 <link rel="stylesheet" href="css/style.css">
 <script src="vendor/chart.umd.js"></script>
 </head>
