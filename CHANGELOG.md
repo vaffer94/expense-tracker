@@ -38,13 +38,30 @@ Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailsca
 
 ### Milestone 4 — subcategories
 
-Spec written and awaiting review: [subcategories-spec.md](subcategories-spec.md).
-Requires wiping the database, which is acceptable while all data is still test data.
+Implemented on `feature/subcategories-and-balance`, awaiting testing.
+Spec: [subcategories-spec.md](subcategories-spec.md).
+
+- Categories can own subcategories, which inherit the parent's kind, icon and colour
+- Transactions record both category and subcategory, so re-parenting never rewrites past charts
+- The Home pie toggles Categories / Subcategories, with slices shaded per parent, and
+  All / Expenses / Income
+- The full-height category picker is gone: the transaction sheet has an inline category grid and
+  subcategory chips, and category management moved to Settings
 
 ### Milestone 5 — starting balance and Trends rework
 
-Spec written and awaiting review: [balance-and-trends-spec.md](balance-and-trends-spec.md).
-Adds the first notion of a balance to the app, and turns Trends into month-over-month comparison.
+Implemented on `feature/subcategories-and-balance`, awaiting testing.
+Spec: [balance-and-trends-spec.md](balance-and-trends-spec.md).
+
+- A starting balance in Settings — the money you had before you started tracking
+- Trends gains a running Total line on its own axis, starting from the balance at the beginning of
+  the window rather than from zero
+- The flat category list under the chart becomes a month-by-month comparison, one row per category
+  with a bar per month and the change from the month before
+- The month's net moves into the Home header; the summary strip drops to two tiles
+
+**Requires wiping the database** (`docker compose down -v`), which is why it ships while all data
+is still test data.
 
 ### Later
 
