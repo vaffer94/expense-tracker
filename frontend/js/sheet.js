@@ -10,7 +10,7 @@ const parseAmount = raw => {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
 };
 
-export function openSheet({ type = 'expense', transaction = null, category = null, focusAmount = false } = {}) {
+export function openSheet({ type = 'expense', transaction = null, category = null, focusAmount = false, newCategory = false } = {}) {
   const editing = Boolean(transaction);
   const kind = editing ? transaction.type : type;
 
@@ -112,6 +112,17 @@ export function openSheet({ type = 'expense', transaction = null, category = nul
     sync();
   }
 
+  function showCategoryForm() {
+    const form = $('[data-f="cat-form"]');
+    form.hidden = false;
+    form.innerHTML = editorFields() + `
+      <div class="form-actions">
+        <button type="button" class="btn ghost" data-act="cancel-cat">Cancel</button>
+        <button type="button" class="btn" data-act="create-cat">Create</button>
+      </div>`;
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   el.addEventListener('input', sync);
   el.addEventListener('click', async e => {
     if (handleEditorClick(e)) return;
@@ -136,16 +147,7 @@ export function openSheet({ type = 'expense', transaction = null, category = nul
       renderSubs(); sync();
     }
 
-    if (act === 'new-cat') {
-      const form = $('[data-f="cat-form"]');
-      form.hidden = false;
-      form.innerHTML = editorFields() + `
-        <div class="form-actions">
-          <button type="button" class="btn ghost" data-act="cancel-cat">Cancel</button>
-          <button type="button" class="btn" data-act="create-cat">Create</button>
-        </div>`;
-      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (act === 'new-cat') showCategoryForm();
     if (act === 'cancel-cat') { const f = $('[data-f="cat-form"]'); f.hidden = true; f.innerHTML = ''; }
 
     if (act === 'create-cat') {
@@ -213,7 +215,7 @@ export function openSheet({ type = 'expense', transaction = null, category = nul
     }
   }
 
-  loadCategories();
+  loadCategories().then(() => { if (newCategory) showCategoryForm(); });
   sync();
   if (focusAmount) setTimeout(() => amountEl.focus(), 320);
 }

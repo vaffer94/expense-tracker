@@ -100,7 +100,7 @@ export const failed = err => toast(err instanceof Error ? err.message : String(e
 export let ICON_NAMES = [];
 
 export async function loadSprite() {
-  const svg = await fetch('vendor/lucide-sprite.svg').then(r => r.text());
+  const svg = await fetch('vendor/lucide-sprite.svg', { cache: 'no-cache' }).then(r => r.text());
   const host = document.createElement('div');
   host.hidden = true;
   host.innerHTML = svg;

@@ -98,7 +98,7 @@ function renderChart({ slices }, categoryCount, txCount) {
       ? `Create your first category to get started<br><button class="btn" id="first-cat">New category</button>`
       : `No ${txCount ? 'activity of this kind' : 'activity'} recorded in ${monthLabel.format(month)}`;
     const btn = $('first-cat');
-    if (btn) btn.onclick = () => openSheet({ type: 'expense' });
+    if (btn) btn.onclick = () => openSheet({ type: 'expense', newCategory: true });
     legend.innerHTML = '';
     return;
   }
