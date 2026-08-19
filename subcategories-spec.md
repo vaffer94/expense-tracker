@@ -156,10 +156,15 @@ transaction sheet itself, and the net result is one screen fewer than today.
 
 Below the amount field:
 
-1. **Category grid** — square tiles, roughly three per row, each showing the category's Lucide icon
-   in its colour above the category name. The selected tile is visibly active. The final tile is
-   **`+`**, which expands the inline "new category" form already built (name, icon grid, colour
-   swatches) without leaving the sheet.
+1. **Category grid** — square tiles, three per row, each showing the category's Lucide icon in its
+   colour above the category name. The selected tile is visibly active. The final tile is **`+`**,
+   which expands the inline "new category" form already built (name, icon grid, colour swatches)
+   without leaving the sheet.
+
+   The grid shows **nine tiles** (three rows). If more categories exist, the ninth position becomes
+   a **`…`** tile that expands the grid to show them all; the `+` tile then sits at the end of the
+   expanded grid. Nine is the expected working set, and the date and notes fields must stay
+   reachable without a long scroll.
 2. **Subcategory row** — appears only once a category is selected, and only if that category has
    subcategories or the user taps to add one. Rendered as chips, all visible at once, no dropdown.
    Tapping selects; tapping the selected one clears it. A trailing **`+`** chip opens a single
@@ -188,6 +193,9 @@ subcategory in subcategory view.
 
 Transaction rows show the subcategory as part of the existing subtitle line, before the notes:
 `Rent · weekly bill · 14:30`.
+
+The Trends view keeps no such toggle — see
+[balance-and-trends-spec.md](balance-and-trends-spec.md).
 
 ### 4.3 Settings
 
@@ -244,20 +252,17 @@ Extending the existing suite:
 
 ---
 
-## 8. Open questions
+## 8. Resolved
 
-1. **The `+` chip for creating subcategories inline** — included above by analogy with categories,
-   but not something you asked for. Keep it, or force subcategory creation through Settings only?
-2. **Category grid size.** Square tiles three per row are comfortable up to about nine categories.
-   Beyond that the grid scrolls before the date and notes fields are reachable. If you expect many
-   categories, the grid should scroll horizontally in one or two rows instead.
-3. **Trends view.** Left untouched here: its breakdown list stays at category level. Should it get
-   the same toggle?
-
----
+1. **The `+` chip for creating subcategories inline** — keep it. Subcategories can be created from
+   the sheet as well as from Settings.
+2. **Category grid size** — nine tiles, then a `…` tile to expand. See §4.1.
+3. **Trends** gets no category/subcategory toggle. It is reworked separately, and more deeply, in
+   [balance-and-trends-spec.md](balance-and-trends-spec.md).
 
 ## 9. Out of scope
 
-Multiple accounts and per-account starting balances — deliberately deferred, since a balance is
-per-account and building a global one first would mean building it twice. Everything already listed
+Multiple accounts — deferred. The starting balance is built globally first, in
+[balance-and-trends-spec.md](balance-and-trends-spec.md); when accounts arrive, that single value
+moves onto the account. Everything already listed
 as out of scope in the original spec remains so.

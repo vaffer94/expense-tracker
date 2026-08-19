@@ -42,11 +42,12 @@ Setup steps are in [README](README.md#reaching-it-from-outside-the-house-tailsca
 Spec written and awaiting review: [subcategories-spec.md](subcategories-spec.md).
 Requires wiping the database, which is acceptable while all data is still test data.
 
-### Later
+### Milestone 5 — starting balance and Trends rework
 
-- [ ] **Starting balance** — there is currently no way to record the money you already had, so
-  the net figure only reflects what has been logged since day one. Possibly just a documented
-  "Opening balance" income transaction rather than a new concept in the data model.
+Spec written and awaiting review: [balance-and-trends-spec.md](balance-and-trends-spec.md).
+Adds the first notion of a balance to the app, and turns Trends into month-over-month comparison.
+
+### Later
 
 Deliberately out of scope, with no hooks or abstractions built for them yet:
 local LLM integration, budgets and alerts, CSV/JSON export, Telegram notifications,
